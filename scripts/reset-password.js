@@ -24,9 +24,22 @@ const mysql = require('mysql2/promise');
     await bcrypt.hash(password, 10),
     email,
   ]);
+  // A reset means the old password may be compromised: sign out every device
+  let signedOut = 0;
+  if (result.affectedRows) {
+    try {
+      const [revoked] = await db.query(
+        "UPDATE auth_sessions s JOIN users u ON u.id = s.userId SET s.revokedAt = NOW(), s.revokedReason = 'password-reset' WHERE u.email = ? AND s.revokedAt IS NULL",
+        [email],
+      );
+      signedOut = revoked.affectedRows;
+    } catch {
+      // auth_sessions doesn't exist until the API has started once
+    }
+  }
   await db.end();
 
-  if (result.affectedRows) console.log(`Password updated for ${email}`);
+  if (result.affectedRows) console.log(`Password updated for ${email} — signed out ${signedOut} session(s)`);
   else {
     console.error(`No admin user with email ${email}`);
     process.exit(1);
