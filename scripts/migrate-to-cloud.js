@@ -45,7 +45,9 @@ const connect = (env, withDb = true) =>
     process.exit(1);
   }
   const source = readEnv('.env');
-  const target = readEnv('.env.tidb');
+  // --target <file> lets you migrate somewhere else (default .env.tidb)
+  const targetArg = process.argv.indexOf('--target');
+  const target = readEnv(targetArg > -1 ? process.argv[targetArg + 1] : '.env.tidb');
   for (const key of ['DB_HOST', 'DB_USER', 'DB_PASSWORD']) {
     if (!target[key]) throw new Error(`Fill in ${key} in BACKEND/.env.tidb first`);
   }

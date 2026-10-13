@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import type { StringValue } from 'ms';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
@@ -7,6 +8,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthController } from './auth/auth.controller';
 import { AuthGuard } from './auth/auth.guard';
 import { AuthService } from './auth/auth.service';
+import { AuthSession } from './auth/session.entity';
 import { User } from './auth/user.entity';
 import {
   AboutParagraphsController,
@@ -37,10 +39,13 @@ import { MessagesController } from './messages/messages.controller';
 import { SeedService } from './seed/seed.service';
 import { SiteController } from './site/site.controller';
 import { SiteService } from './site/site.service';
-import { UploadsController } from './uploads/uploads.controller';
+import { databaseSsl } from './common/database';
+import { StoredFile, StoredFileChunk } from './uploads/stored-file.entity';
+import { FilesController, UploadsController } from './uploads/uploads.controller';
 
 const entities = [
   User,
+  AuthSession,
   Profile,
   Settings,
   Section,
@@ -52,6 +57,8 @@ const entities = [
   Experience,
   Project,
   Message,
+  StoredFile,
+  StoredFileChunk,
 ];
 
 @Module({
@@ -69,6 +76,7 @@ const entities = [
         entities,
         synchronize: config.get('DB_SYNC', 'true') === 'true',
         charset: 'utf8mb4',
+        ssl: databaseSsl(),
       }),
     }),
     TypeOrmModule.forFeature(entities),
@@ -77,7 +85,8 @@ const entities = [
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         secret: config.get('JWT_SECRET', 'change-me'),
-        signOptions: { expiresIn: config.get('JWT_EXPIRES_IN', '7d') },
+        // Short-lived access tokens; sessions are kept alive by the 7-day refresh token
+        signOptions: { expiresIn: config.get('JWT_ACCESS_EXPIRES_IN', '15m') as StringValue },
       }),
     }),
   ],
@@ -96,6 +105,7 @@ const entities = [
     ProjectsController,
     MessagesController,
     UploadsController,
+    FilesController,
   ],
   providers: [{ provide: APP_GUARD, useClass: AuthGuard }, AuthService, SeedService, SiteService],
 })

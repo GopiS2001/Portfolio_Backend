@@ -19,6 +19,7 @@ const mysql = require('mysql2/promise');
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD || '',
     database: process.env.DB_NAME || 'portfolio',
+    ssl: process.env.DB_SSL === 'true' ? { minVersion: 'TLSv1.2', rejectUnauthorized: true } : undefined,
   });
   const [result] = await db.query('UPDATE users SET passwordHash = ? WHERE email = ?', [
     await bcrypt.hash(password, 10),

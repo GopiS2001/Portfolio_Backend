@@ -3,3 +3,7 @@ dist
 .env
 uploads/*
 !uploads/.gitkeep
+
+# Local connection files for hosted databases (never commit)
+.env.*
+!.env.example

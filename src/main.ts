@@ -1,14 +1,14 @@
 import 'reflect-metadata';
 
-import { Logger, ValidationPipe } from '@nestjs/common';
+import { Logger, RequestMethod, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { config as loadEnv } from 'dotenv';
-import { mkdirSync } from 'fs';
 import { Connection, createConnection, RowDataPacket } from 'mysql2/promise';
 
 import { AppModule } from './app.module';
-import { UPLOAD_DIR } from './uploads/uploads.controller';
+import { createOriginPolicy } from './common/origins';
+import { databaseSsl } from './common/database';
 
 loadEnv();
 
@@ -20,6 +20,7 @@ async function ensureDatabase() {
     port: Number(process.env.DB_PORT || 3306),
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD || '',
+    ssl: databaseSsl(),
   });
   await conn.query(
     `CREATE DATABASE IF NOT EXISTS \`${name.replace(/`/g, '')}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`,
@@ -55,48 +56,26 @@ async function migrateExperiencePoints(conn: Connection) {
 
 async function bootstrap() {
   await ensureDatabase();
-  mkdirSync(UPLOAD_DIR, { recursive: true });
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  // Behind a proxy (Render): trust X-Forwarded-* so req.ip is the visitor, not the proxy
+  app.set('trust proxy', 1);
 
-  // Allowed: any port on localhost, on any private LAN address (your Wi-Fi IP changes),
-  // and on every host listed in CORS_ORIGINS (e.g. your real domain in production).
-  const origins = (process.env.CORS_ORIGINS || '*').split(',').map((o) => o.trim());
-  const hosts = new Set(['localhost', '127.0.0.1']);
-  for (const o of origins) {
-    try {
-      hosts.add(new URL(o).hostname);
-    } catch {}
-  }
-  const isPrivateIp = (h: string) =>
-    /^10\./.test(h) || /^192\.168\./.test(h) || /^172\.(1[6-9]|2\d|3[01])\./.test(h);
+  // Allowed: any port on localhost, any private LAN address and every host in CORS_ORIGINS.
+  // Credentials are on so browsers send the httpOnly refresh-token cookie to /api/auth.
+  const origins = createOriginPolicy();
   app.enableCors({
-    origin: (origin, callback) => {
-      if (!origin || origins.includes('*')) return callback(null, true);
-      try {
-        const host = new URL(origin).hostname;
-        callback(null, hosts.has(host) || isPrivateIp(host));
-      } catch {
-        callback(null, false);
-      }
-    },
+    origin: (origin, callback) => callback(null, !origin || origins.isAllowed(origin)),
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Client-App'],
   });
-  app.setGlobalPrefix('api');
+  // File links stay at /uploads/<name> (served from the database), everything else under /api
+  app.setGlobalPrefix('api', { exclude: [{ path: 'uploads/:name', method: RequestMethod.GET }] });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
-  app.useStaticAssets(UPLOAD_DIR, {
-    prefix: '/uploads',
-    // Phones only offer to install an APK when it arrives with this type, as a download.
-    setHeaders: (res, path) => {
-      if (path.toLowerCase().endsWith('.apk')) {
-        res.setHeader('Content-Type', 'application/vnd.android.package-archive');
-        res.setHeader('Content-Disposition', 'attachment');
-      }
-    },
-  });
 
   const port = Number(process.env.PORT || 4000);
   await app.listen(port, '0.0.0.0');
-  Logger.log(`API ready on http://localhost:${port}/api`, 'Bootstrap');
+  Logger.log(`API ready on port ${port} — http://localhost:${port}/api`, 'Bootstrap');
 }
 
 bootstrap().catch((err) => {
