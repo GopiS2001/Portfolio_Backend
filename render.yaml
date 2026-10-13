@@ -1,0 +1,57 @@
+# Render Blueprint for the portfolio API.
+# Render dashboard → New → Blueprint → pick this repository. Values marked `sync: false`
+# are asked for during setup (take them from TiDB Cloud → your cluster → Connect).
+services:
+  - type: web
+    name: gopi-portfolio-api
+    runtime: node
+    plan: free
+    # Singapore is the closest Render region to India; match your TiDB cluster region if you can
+    region: singapore
+    branch: main
+    buildCommand: npm ci && npm run build
+    startCommand: node dist/main
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+
+      # Database: TiDB Cloud (MySQL-compatible, TLS required)
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        value: "4000"
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_NAME
+        value: portfolio
+      - key: DB_SSL
+        value: "true"
+      - key: DB_SYNC
+        value: "true"
+
+      # Auth: Render generates a long random secret
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_ACCESS_EXPIRES_IN
+        value: 15m
+      - key: REFRESH_TOKEN_TTL_DAYS
+        value: "7"
+      # The website/dashboard (vercel.app) and this API (onrender.com) are different sites:
+      # the refresh cookie must be Secure + SameSite=None to be sent between them
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: COOKIE_SAMESITE
+        value: none
+
+      # Sites allowed to call the API with the sign-in cookie
+      - key: CORS_ORIGINS
+        value: https://gopi-portfolio-eight.vercel.app,https://gopi-portfolio-admin.vercel.app
+
+      # No local website folder on Render: don't write snapshot files
+      - key: SNAPSHOT_PATHS
+        value: ""
+      # PUBLIC_URL is not needed: Render's RENDER_EXTERNAL_URL is used for upload links
