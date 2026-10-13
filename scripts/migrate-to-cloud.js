@@ -79,7 +79,9 @@ const connect = (env, withDb = true) =>
     const [[create]] = await src.query(`SHOW CREATE TABLE \`${table}\``);
     await dst.query(create['Create Table'].replace(/^CREATE TABLE/, 'CREATE TABLE IF NOT EXISTS'));
     if (SKIP_ROWS.has(table)) {
-      console.log(`  ${table}: structure only`);
+      // The users are replaced below, so nobody stays signed in with an old account
+      await dst.query(`DELETE FROM \`${table}\``);
+      console.log(`  ${table}: structure only (existing sessions signed out)`);
       continue;
     }
     const [rows] = await src.query(`SELECT * FROM \`${table}\``);
