@@ -143,6 +143,8 @@ export class UpdateSettingsDto {
   @IsOptional() @IsIn(['light', 'dark', 'system']) defaultTheme?: 'light' | 'dark' | 'system';
   @OptS(20) accentLight?: string;
   @OptS(20) accentDark?: string;
+  @IsOptional() @IsIn(DESIGN_STYLES) designStyle?: DesignStyle;
+  @IsOptional() @IsBoolean() enableStyleSwitcher?: boolean;
   @OptS(80) fontSans?: string;
   @OptS(80) fontSerif?: string;
   @IsOptional() @IsInt() @Min(12) @Max(24) baseFontSize?: number;
