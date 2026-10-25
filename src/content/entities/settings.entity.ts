@@ -28,6 +28,10 @@ export class Settings {
   @Column({ type: 'varchar', length: 10, default: 'system' }) defaultTheme: ThemeMode;
   @Column({ default: '#a87a32' }) accentLight: string;
   @Column({ default: '#d9b26a' }) accentDark: string;
+  /** Surface look for every visitor (cards, buttons, inputs, navigation). */
+  @Column({ type: 'varchar', length: 20, default: 'neumorphism' }) designStyle: DesignStyle;
+  /** Lets visitors try the other design styles from a switcher in the header. */
+  @Column({ default: false }) enableStyleSwitcher: boolean;
 
   // Typography
   @Column({ default: 'Geist' }) fontSans: string;
