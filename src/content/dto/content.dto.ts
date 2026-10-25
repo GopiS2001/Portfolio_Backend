@@ -15,6 +15,7 @@ import {
 import { Type } from 'class-transformer';
 
 import { PROJECT_CATEGORIES, ProjectCategory } from '../entities/list.entities';
+import { DESIGN_STYLES, DesignStyle } from '../entities/settings.entity';
 
 // ---------------------------------------------------------------- shared
 
