@@ -241,11 +241,17 @@ export class AuthService implements OnModuleInit {
     return { user };
   }
 
-  async updateAccount(id: number, data: { displayName?: string; email?: string }) {
+  async updateAccount(
+    id: number,
+    data: { displayName?: string; email?: string; phone?: string; gender?: string },
+  ) {
     const user = await this.users.findOneBy({ id });
     if (!user) throw unauthorized(AUTH_ERROR.sessionRevoked, 'Account no longer exists');
     if (data.email) user.email = data.email.toLowerCase();
     if (data.displayName) user.displayName = data.displayName;
+    // Optional profile details: omitted = unchanged, "" = cleared
+    if (data.phone !== undefined) user.phone = data.phone.trim() || null;
+    if (data.gender !== undefined) user.gender = data.gender || null;
     return { user: await this.users.save(user) };
   }
 
