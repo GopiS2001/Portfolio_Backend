@@ -243,7 +243,7 @@ export class AuthService implements OnModuleInit {
 
   async updateAccount(
     id: number,
-    data: { displayName?: string; email?: string; phone?: string; gender?: string },
+    data: { displayName?: string; email?: string; phone?: string },
   ) {
     const user = await this.users.findOneBy({ id });
     if (!user) throw unauthorized(AUTH_ERROR.sessionRevoked, 'Account no longer exists');
