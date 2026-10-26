@@ -249,14 +249,23 @@ export class AuthService implements OnModuleInit {
     return { user: await this.users.save(user) };
   }
 
-  /** Changing the password signs out every other device. */
-  async changePassword(id: number, currentSessionId: string, currentPassword: string, newPassword: string) {
+  /**
+   * Changing the password signs out every other device. The current password is verified only
+   * when given — the signed-in mobile app sets a new one directly.
+   */
+  async changePassword(
+    id: number,
+    currentSessionId: string,
+    currentPassword: string | undefined,
+    newPassword: string,
+  ) {
     const user = await this.users
       .createQueryBuilder('u')
       .addSelect('u.passwordHash')
       .where('u.id = :id', { id })
       .getOne();
-    if (!user || !(await bcrypt.compare(currentPassword, user.passwordHash))) {
+    if (!user) throw unauthorized(AUTH_ERROR.sessionRevoked, 'Account no longer exists');
+    if (currentPassword !== undefined && !(await bcrypt.compare(currentPassword, user.passwordHash))) {
       throw new BadRequestException('Current password is incorrect');
     }
     user.passwordHash = await bcrypt.hash(newPassword, 10);
