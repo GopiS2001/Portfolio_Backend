@@ -41,7 +41,8 @@ class UpdateAccountDto {
 }
 
 class ChangePasswordDto {
-  @IsString() currentPassword: string;
+  /** Checked when sent (dashboard); the mobile app changes the password without it. */
+  @IsOptional() @IsString() currentPassword?: string;
   @IsString() @MinLength(6) newPassword: string;
 }
 
