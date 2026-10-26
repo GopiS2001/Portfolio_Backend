@@ -35,15 +35,11 @@ class RefreshDto {
   @IsOptional() @IsString() @MaxLength(200) refreshToken?: string;
 }
 
-export const GENDERS = ['male', 'female', 'other'] as const;
-
 class UpdateAccountDto {
   @IsOptional() @IsEmail() email?: string;
   @IsOptional() @IsString() @MaxLength(120) displayName?: string;
   /** Empty string clears it. */
   @IsOptional() @IsString() @MaxLength(30) phone?: string;
-  /** Empty string clears it. */
-  @IsOptional() @IsIn([...GENDERS, '']) gender?: string;
 }
 
 class ChangePasswordDto {
