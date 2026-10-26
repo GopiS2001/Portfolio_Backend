@@ -2,7 +2,7 @@ import { Column, Entity, PrimaryColumn, UpdateDateColumn } from 'typeorm';
 
 export type ThemeMode = 'light' | 'dark' | 'system';
 
-export const DESIGN_STYLES = ['neumorphism', 'glassmorphism', 'claymorphism', 'skeuomorphism'] as const;
+export const DESIGN_STYLES = ['neumorphism', 'glassmorphism', 'claymorphism', 'skeuomorphism', 'zephyr'] as const;
 export type DesignStyle = (typeof DESIGN_STYLES)[number];
 
 /** Singleton row (id = 1): everything the Configuration page controls. */
